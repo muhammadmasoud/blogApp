@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from ..models import Category, Post
 
+# ----- User Serializer -----
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
@@ -27,3 +29,23 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+
+# ----- Category Serializer -----
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+# ----- Post Serializer -----
+class PostSerializer(serializers.ModelSerializer):
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), allow_null=True)
+
+    class Meta:
+        model = Post
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'likes', 'dislikes']
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['category'] = instance.category.name if instance.category else None
+        return rep
