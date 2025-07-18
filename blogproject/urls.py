@@ -19,5 +19,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('blog.api.urls')),
+    path('api/', include('blog.api.urls')),   # from auth branch
+    path('', include('blog.urls')),           # from comments branch
 ]
+
