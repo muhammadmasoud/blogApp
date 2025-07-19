@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'blog',
+    'rest_framework' ,
+    'dashboard',
 ]
 
 MIDDLEWARE = [
@@ -124,3 +127,11 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'blog.User'
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'blog/static')
+]
+
+TEMPLATES[0]['DIRS'] = [
+    os.path.join(BASE_DIR, 'blog/templates')
+]
