@@ -2,10 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 
-<<<<<<< HEAD
-=======
 
->>>>>>> origin/post-management
 # =============================================================================
 # USER MODELS
 # =============================================================================
@@ -15,9 +12,11 @@ class User(AbstractUser):
     is_blocked = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+    subscribed_categories = models.ManyToManyField('Category', related_name='subscribers', blank=True)
+
     def __str__(self):
         return self.username
+
 
 # =============================================================================
 # CONTENT MODELS
@@ -48,26 +47,26 @@ class Post(models.Model):
     likes = models.PositiveIntegerField(default=0)
     dislikes = models.PositiveIntegerField(default=0)
     publish_date = models.DateTimeField(default=timezone.now)
-    
-    # Relationships
+
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     category = models.ForeignKey(
         Category,
         on_delete=models.SET_NULL,
         null=True,
-        related_name='posts'
+        related_name='posts'  # Use related_name to get posts from category
     )
     tags = models.ManyToManyField(Tag, blank=True)
-    
+
     def __str__(self):
         return self.title
-    
+
     def save(self, *args, **kwargs):
+        # If dislikes exceed 10, delete the post instead of saving
         if self.dislikes > 10:
             self.delete()
             return
         super().save(*args, **kwargs)
-    
+
     class Meta:
         ordering = ['-publish_date']
 
@@ -75,21 +74,21 @@ class Post(models.Model):
 class Comment(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
-    
+
     def __str__(self):
         return f'{self.user.username}: {self.content[:50]}...'
-    
+
     def save(self, *args, **kwargs):
         forbidden_words = ForbiddenWord.objects.values_list('word', flat=True)
         for word in forbidden_words:
             if word.lower() in self.content.lower():
                 self.content = self.content.replace(word, '*' * len(word))
         super().save(*args, **kwargs)
-    
+
     class Meta:
         ordering = ['-created_at']
 
@@ -101,10 +100,10 @@ class Comment(models.Model):
 class Subscription(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    
+
     def __str__(self):
         return f'{self.user.username} -> {self.category.name}'
-    
+
     class Meta:
         unique_together = ('user', 'category')
 
@@ -113,17 +112,18 @@ class PostLike(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     is_like = models.BooleanField()
-    
+
     def __str__(self):
         action = "liked" if self.is_like else "disliked"
         return f'{self.user.username} {action} {self.post.title}'
-    
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
+        # Update counts after saving like/dislike
         self.post.likes = PostLike.objects.filter(post=self.post, is_like=True).count()
         self.post.dislikes = PostLike.objects.filter(post=self.post, is_like=False).count()
         self.post.save()
-    
+
     class Meta:
         unique_together = ('user', 'post')
 
@@ -134,6 +134,6 @@ class PostLike(models.Model):
 
 class ForbiddenWord(models.Model):
     word = models.CharField(max_length=100, unique=True)
-    
+
     def __str__(self):
         return self.word
