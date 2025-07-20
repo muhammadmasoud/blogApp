@@ -18,6 +18,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path('', view_add_post, name='home'),  # Root URL - shows all posts
     path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('signup/', signup, name='api-signup'),
     path('comments/', CommentListCreateView.as_view(), name='comment-list-create'),
