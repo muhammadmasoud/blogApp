@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import './App.css';
 
 const Home = lazy(() => import('./Home'));
+const CategoryPosts = lazy(() => import('./CategoryPosts'));
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/" element={<Home />} />
+              <Route path="/category/:id" element={<CategoryPosts />} />
             </Routes>
           </Suspense>
         </div>
