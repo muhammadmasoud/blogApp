@@ -1,21 +1,29 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
 import Login from './Login';
 import Register from './Register';
-import './App.css'
+import { AuthProvider } from './AuthContext';
+import Navbar from './components/Navbar';
+import './App.css';
+
+const Home = lazy(() => import('./Home'));
 
 function App() {
   return (
-    <Router>
-      <nav style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '2rem' }}>
-        <Link to="/login">Login</Link>
-        <Link to="/register">Register</Link>
-      </nav>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/" element={<div>Welcome to the Blog App!</div>} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Navbar />
+        <div style={{ minHeight: '80vh' }}>
+          <Suspense fallback={<div style={{textAlign:'center',marginTop:'4rem',fontSize:'2rem',color:'#646cff'}}>Loading...</div>}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/" element={<Home />} />
+            </Routes>
+          </Suspense>
+        </div>
+      </Router>
+    </AuthProvider>
   );
 }
 

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
 
 const API_URL = 'http://127.0.0.1:8000';
 
@@ -7,6 +9,8 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -26,7 +30,8 @@ export default function Register() {
       const data = await res.json();
       if (res.ok && data.access) {
         setSuccess(true);
-        // Save token to localStorage or context here
+        login({ username: form.username, is_admin: data.is_admin ?? false }, data.access);
+        setTimeout(() => navigate('/'), 800);
       } else {
         setError(
           data.email?.[0] ||

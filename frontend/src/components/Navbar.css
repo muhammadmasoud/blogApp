@@ -1,0 +1,105 @@
+.navbar {
+  width: 100vw;
+  left: 0;
+  top: 0;
+  margin: 0;
+  border-radius: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 3vw 1.2rem 3vw;
+  background: linear-gradient(90deg, #646cff 0%, #61dafb 100%);
+  box-shadow: 0 4px 32px #646cff33, 0 1.5px 16px #61dafb33;
+  position: fixed;
+  z-index: 1000;
+  min-height: 64px;
+  box-sizing: border-box;
+}
+
+.navbar-logo {
+  font-size: 2.2rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 2px 12px #646cff99, 0 2px 8px #ffb86c55;
+  margin-right: 2rem;
+  letter-spacing: 2px;
+  transition: color 0.2s;
+}
+
+.navbar-logo:hover {
+  color: #ffb86c;
+}
+
+.navbar-link {
+  color: #fff;
+  font-size: 1.1rem;
+  margin: 0 1rem;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s, background 0.2s;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+}
+
+.navbar-link:hover {
+  background: #fff3;
+  color: #222;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-right: 1vw;
+}
+
+.navbar-username {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-right: 0.5rem;
+  letter-spacing: 1px;
+  background: #646cff55;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #646cff33;
+  display: flex;
+  align-items: center;
+  min-width: 80px;
+  justify-content: center;
+}
+
+.navbar-logout {
+  background: linear-gradient(90deg, #ff6a6a, #ffb86c);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 8px #ff6a6a33;
+  transition: background 0.2s, color 0.2s;
+  margin-left: 0.5rem;
+}
+
+.navbar-logout:hover {
+  background: linear-gradient(90deg, #ffb86c, #ff6a6a);
+  color: #222;
+}
+
+@media (max-width: 700px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem 2vw;
+    min-height: 48px;
+  }
+  .navbar-logo {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .navbar-right {
+    gap: 0.5rem;
+  }
+} 

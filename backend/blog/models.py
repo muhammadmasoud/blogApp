@@ -46,6 +46,7 @@ class Post(models.Model):
     likes = models.IntegerField(default=0)
     dislikes = models.IntegerField(default=0)
     publish_date = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     
     # Relationships
     author = models.ForeignKey(User, on_delete=models.CASCADE)

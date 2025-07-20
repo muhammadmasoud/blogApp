@@ -71,11 +71,18 @@ class TagSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
+    author = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = '__all__'
         read_only_fields = ['id', 'likes', 'dislikes', 'author']
+
+    def get_author(self, obj):
+        return {
+            "id": obj.author.id,
+            "username": obj.author.username
+        }
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
@@ -87,20 +94,13 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'category']
 
 # If you have a Post model, add its serializer as well:
-try:
-    from .models import Post
-
-    class PostSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = Post
-            fields = ['id', 'title', 'content', 'category', 'author', 'created_at']
-except ImportError:
-    pass
+# Removed duplicate PostSerializer here to avoid override issues.
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
-        data['username'] = self.user.username  
+        data['username'] = self.user.username
+        data['is_admin'] = getattr(self.user, 'is_admin', False)
         return data
 
 
