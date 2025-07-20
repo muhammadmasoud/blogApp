@@ -17,9 +17,7 @@ export default function Sidebar() {
   useEffect(() => {
     setLoading(true);
     setError('');
-    fetch(API_URL, {
-      headers: user && token ? { 'Authorization': `Bearer ${token}` } : {},
-    })
+    fetch(API_URL)
       .then(async res => {
         if (!res.ok) {
           // If unauthorized or error, return empty array

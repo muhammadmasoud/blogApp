@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 export default function CategoryPosts() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [category, setCategory] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,7 +35,12 @@ export default function CategoryPosts() {
       {!loading && !error && posts.length === 0 && <div className="posts-empty">No posts in this category yet.</div>}
       <div className="posts-list">
         {posts.map(post => (
-          <div className="post-card" key={post.id}>
+          <div
+            className="post-card"
+            key={post.id}
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate(`/post/${post.id}`)}
+          >
             <h3 className="post-title">{post.title}</h3>
             <div className="post-meta">
               <span>By {post.author?.username || 'Unknown'}</span>
