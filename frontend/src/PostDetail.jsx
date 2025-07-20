@@ -216,59 +216,61 @@ export default function PostDetail() {
           👎 {dislikeCount}
         </button>
       </div>
-      <div className="post-detail-comments">
-        <h3>Comments</h3>
-        {comments.length === 0 && <div>No comments yet.</div>}
+      <div className="post-detail-comments mt-12">
+        <h3 className="text-2xl font-bold mb-6 text-white drop-shadow-lg">Comments</h3>
+        {comments.length === 0 && <div className="text-gray-300 italic mb-4">No comments yet.</div>}
         {comments
           .filter(comment => !comment.parent) // Only top-level comments
           .map(comment => (
-            <div key={comment.id} className="comment">
-              <div className="comment-meta">
-                <span>{comment.user || 'Unknown'}</span>
-                <span> | {comment.created_at ? new Date(comment.created_at).toLocaleString() : ''}</span>
+            <div key={comment.id} className="comment mb-8 p-6 rounded-2xl bg-gradient-to-br from-indigo-900/70 via-purple-900/60 to-slate-900/80 shadow-xl border border-indigo-500/20">
+              <div className="comment-meta flex items-center gap-3 mb-2 text-sm text-indigo-200 font-semibold">
+                <span className="inline-flex items-center gap-1"><span className="text-lg">👤</span>{comment.user || 'Unknown'}</span>
+                <span className="text-xs text-indigo-300">| {comment.created_at ? new Date(comment.created_at).toLocaleString() : ''}</span>
               </div>
-              <div className="comment-text">{comment.content}</div>
+              <div className="comment-text text-lg text-white mb-2 break-words">{comment.content}</div>
               {user && (!comment.replies || comment.replies.length === 0) && (
-                <button onClick={() => setReplyingTo(comment.id)} style={{ marginTop: '0.5rem' }}>
-                  Reply
-                </button>
+                <button onClick={() => setReplyingTo(comment.id)} className="mt-2 px-4 py-1 rounded-lg bg-gradient-to-r from-indigo-500 to-pink-500 text-white font-semibold shadow hover:from-pink-500 hover:to-indigo-500 transition-colors">Reply</button>
               )}
               {replyingTo === comment.id && (
-                <form onSubmit={e => { e.preventDefault(); handleReplySubmit(comment.id); }} className="comment-form" style={{ marginTop: '0.5rem' }}>
+                <form onSubmit={e => { e.preventDefault(); handleReplySubmit(comment.id); }} className="comment-form mt-3 flex flex-col gap-2">
                   <textarea
                     value={replyText}
                     onChange={e => setReplyText(e.target.value)}
                     placeholder="Write your reply..."
                     required
+                    className="rounded-xl bg-slate-800/80 border border-indigo-400/30 text-white p-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition resize-none min-h-[60px]"
                   />
-                  <button type="submit">Submit Reply</button>
-                  <button type="button" onClick={() => setReplyingTo(null)} style={{ marginLeft: '0.5rem' }}>Cancel</button>
+                  <div className="flex gap-2">
+                    <button type="submit" className="px-4 py-1 rounded-lg bg-gradient-to-r from-indigo-500 to-pink-500 text-white font-semibold shadow hover:from-pink-500 hover:to-indigo-500 transition-colors">Submit Reply</button>
+                    <button type="button" onClick={() => setReplyingTo(null)} className="px-4 py-1 rounded-lg bg-slate-700 text-gray-200 hover:bg-slate-600 transition">Cancel</button>
+                  </div>
                 </form>
               )}
               {/* Show the first reply, if it exists */}
               {comment.replies && comment.replies.length > 0 && (
-                <div className="comment reply" key={comment.replies[0].id} style={{ marginLeft: '2rem', background: '#23243a99' }}>
-                  <div className="comment-meta">
-                    <span>{comment.replies[0].user || 'Unknown'}</span>
-                    <span> | {comment.replies[0].created_at ? new Date(comment.replies[0].created_at).toLocaleString() : ''}</span>
+                <div className="comment reply mt-4 ml-8 p-4 rounded-xl bg-gradient-to-br from-indigo-800/60 via-purple-800/50 to-slate-800/70 border border-indigo-400/10 shadow-inner">
+                  <div className="comment-meta flex items-center gap-2 mb-1 text-xs text-pink-200 font-semibold">
+                    <span className="inline-flex items-center gap-1"><span className="text-lg">👤</span>{comment.replies[0].user || 'Unknown'}</span>
+                    <span className="text-xs text-pink-300">| {comment.replies[0].created_at ? new Date(comment.replies[0].created_at).toLocaleString() : ''}</span>
                   </div>
-                  <div className="comment-text">{comment.replies[0].content}</div>
+                  <div className="comment-text text-base text-pink-100 break-words">{comment.replies[0].content}</div>
                 </div>
               )}
             </div>
         ))}
         {user ? (
-          <form onSubmit={handleCommentSubmit} className="comment-form">
+          <form onSubmit={handleCommentSubmit} className="comment-form mt-10 flex flex-col gap-3 p-6 rounded-2xl bg-gradient-to-br from-indigo-900/60 via-purple-900/40 to-slate-900/60 shadow-lg border border-indigo-500/20">
             <textarea
               value={commentText}
               onChange={e => setCommentText(e.target.value)}
               placeholder="Add a comment..."
               required
+              className="rounded-xl bg-slate-800/80 border border-indigo-400/30 text-white p-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition resize-none min-h-[70px]"
             />
-            <button type="submit">Submit</button>
+            <button type="submit" className="self-end px-6 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-pink-500 text-white font-bold shadow hover:from-pink-500 hover:to-indigo-500 transition-colors">Submit</button>
           </form>
         ) : (
-          <div>You must be logged in to comment.</div>
+          <div className="text-indigo-200 italic mt-6">You must be logged in to comment.</div>
         )}
       </div>
     </div>

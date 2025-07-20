@@ -14,17 +14,11 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <div className="navbar-left">
+      <div className="navbar-center">
         <Link to="/" className="navbar-logo">Blogify</Link>
-        <Link to="/" className="navbar-link">Home</Link>
-      </div>
-      <div className="navbar-right">
         {user ? (
           <>
-            <span className="navbar-username">👤 {user.username}</span>
-            {user.is_admin && (
-              <a href="http://localhost:8000/admin" className="navbar-link" target="_blank" rel="noopener noreferrer">Manage Blog</a>
-            )}
+            <span className="navbar-username">{user.username}</span>
             <button className="navbar-logout" onClick={handleLogout}>Logout</button>
           </>
         ) : (
