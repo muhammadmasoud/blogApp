@@ -1,19 +1,28 @@
-from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework import status
+from rest_framework import status, generics, permissions
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.filters import OrderingFilter
+from rest_framework.generics import ListAPIView
+from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.exceptions import ValidationError
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
-from rest_framework import generics, permissions
+
 from blog.models import Comment
-
-
-from .serializers import CommentSerializer
-
 from ..models import Post, Category
-from .serializers import UserSerializer, PostSerializer, CategorySerializer
+from .serializers import (
+    UserSerializer,
+    PostSerializer,
+    CategorySerializer,
+    CommentSerializer,
+    CustomTokenObtainPairSerializer
+)
 
+# -------------------- Authentication --------------------
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -21,14 +30,19 @@ def signup(request):
     serializer = UserSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
-        token, _ = Token.objects.get_or_create(user=user)
+        refresh = RefreshToken.for_user(user)
         return Response({
             'user': {'username': user.username, 'email': user.email},
-            'token': token.key,
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
             'message': 'User created successfully.'
         }, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+# -------------------- Posts --------------------
 
 @api_view(['GET', 'POST'])
 @permission_classes([AllowAny])
@@ -36,10 +50,7 @@ def view_add_post(request):
     if request.method == 'GET':
         posts = Post.objects.all()
         ordering = request.GET.get('ordering', '-publish_date')
-        try:
-            posts = posts.order_by(ordering)
-        except Exception:
-            posts = posts.order_by('-publish_date')
+        posts = posts.order_by(ordering)
 
         paginator = PageNumberPagination()
         paginator.page_size = 5
@@ -49,65 +60,72 @@ def view_add_post(request):
 
     elif request.method == 'POST':
         if not request.user.is_authenticated:
-            return Response({"error": "Authentication required to add post."},
-                            status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"error": "Authentication required to add post."}, status=401)
         created_post = PostSerializer(data=request.data)
         created_post.is_valid(raise_exception=True)
         created_post.save(author=request.user)
-        return Response(created_post.data, status=status.HTTP_201_CREATED)
+        return Response(created_post.data, status=201)
 
 
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
-@permission_classes([AllowAny])  # Make GET public, but restrict others to auth below
+@permission_classes([AllowAny])
 def post_by_id(request, id):
-    try:
-        post = Post.objects.get(pk=id)
-    except Post.DoesNotExist as e:
-        return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+    post = get_object_or_404(Post, pk=id)
 
     if request.method == 'GET':
-        serialized_post = PostSerializer(post)
-        return Response(serialized_post.data, status=status.HTTP_200_OK)
+        return Response(PostSerializer(post).data)
 
-    # For methods modifying data, require authentication:
     if not request.user.is_authenticated:
-        return Response({"error": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response({"error": "Authentication required."}, status=401)
 
     if request.method == 'DELETE':
         post.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=204)
 
-    elif request.method in ['PUT', 'PATCH']:
+    if request.method in ['PUT', 'PATCH']:
         is_partial = request.method == 'PATCH'
-        edited_post = PostSerializer(post, data=request.data, partial=is_partial)
-        edited_post.is_valid(raise_exception=True)
-        edited_post.save(author=request.user)
-        return Response(edited_post.data, status=status.HTTP_200_OK)
+        serializer = PostSerializer(post, data=request.data, partial=is_partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(author=request.user)
+        return Response(serializer.data)
 
+
+class PostPagination(PageNumberPagination):
+    page_size = 5
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+class PostListAPIView(ListAPIView):
+    queryset = Post.objects.all().order_by('-publish_date')
+    serializer_class = PostSerializer
+    permission_classes = [AllowAny]
+    pagination_class = PostPagination
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ['category']
+    ordering_fields = ['publish_date']
+
+# -------------------- Categories --------------------
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_categories(request):
     categories = Category.objects.all()
-    serialized = CategorySerializer(categories, many=True, context={'request': request})
-    return Response(serialized.data, status=status.HTTP_200_OK)
+    serializer = CategorySerializer(categories, many=True, context={'request': request})
+    return Response(serializer.data)
 
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_posts_by_category_id(request, id):
-    try:
-        category = Category.objects.get(pk=id)
-    except Category.DoesNotExist as e:
-        return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
-
+    category = get_object_or_404(Category, pk=id)
     posts = category.post_set.all().order_by('-publish_date')
 
     paginator = PageNumberPagination()
     paginator.page_size = 5
     paginated = paginator.paginate_queryset(posts, request)
-    serialized = PostSerializer(paginated, many=True)
-    return paginator.get_paginated_response(serialized.data)
+    serializer = PostSerializer(paginated, many=True)
+    return paginator.get_paginated_response(serializer.data)
 
 
 @api_view(['POST'])
@@ -115,13 +133,9 @@ def get_posts_by_category_id(request, id):
 def subscribe_to_category(request):
     category_id = request.data.get('category_id')
     if not category_id:
-        return Response({'error': 'Category ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Category ID is required'}, status=400)
 
-    try:
-        category = Category.objects.get(id=category_id)
-    except Category.DoesNotExist:
-        return Response({'error': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
-
+    category = get_object_or_404(Category, id=category_id)
     request.user.subscribed_categories.add(category)
 
     send_mail(
@@ -132,52 +146,46 @@ def subscribe_to_category(request):
         fail_silently=True,
     )
 
-    return Response({'message': f'Subscribed to category: {category.name}'}, status=status.HTTP_200_OK)
+    return Response({'message': f'Subscribed to category: {category.name}'})
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def unsubscribe_from_category(request):
     category_id = request.data.get('category_id')
     if not category_id:
-        return Response({'error': 'Category ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Category ID is required'}, status=400)
 
-    try:
-        category = Category.objects.get(id=category_id)
-    except Category.DoesNotExist:
-        return Response({'error': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    request.user.subscribed_categories.remove(category)  # Adjust according to your User model's relation
-    return Response({'message': f'Unsubscribed from category: {category.name}'}, status=status.HTTP_200_OK)
+    category = get_object_or_404(Category, id=category_id)
+    request.user.subscribed_categories.remove(category)
+    return Response({'message': f'Unsubscribed from category: {category.name}'})
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_subscriptions(request):
-    user = request.user
-    categories = user.subscribed_categories.all()
+    categories = request.user.subscribed_categories.all()
     serializer = CategorySerializer(categories, many=True)
-    return Response(serializer.data, status=200)
+    return Response(serializer.data)
 
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def all_categories_with_subscription_status(request):
     user = request.user
-    if user.is_authenticated:
-        user_subscribed_ids = set(user.subscribed_categories.values_list('id', flat=True))
-    else:
-        user_subscribed_ids = set()
+    subscribed_ids = set(user.subscribed_categories.values_list('id', flat=True)) if user.is_authenticated else set()
 
     categories = Category.objects.all()
-    data = []
-
-    for category in categories:
-        data.append({
+    data = [
+        {
             'id': category.id,
             'name': category.name,
-            'subscribed': category.id in user_subscribed_ids,
-        })
+            'subscribed': category.id in subscribed_ids,
+        } for category in categories
+    ]
+    return Response(data)
 
-    return Response(data, status=200)
+# -------------------- Comments --------------------
 
 class CommentListCreateView(generics.ListCreateAPIView):
     serializer_class = CommentSerializer
@@ -185,8 +193,70 @@ class CommentListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         post_id = self.kwargs['post_id']
-        return Comment.objects.filter(post_id=post_id)
+        return Comment.objects.filter(post_id=post_id).order_by('-created_at')
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
         post_id = self.kwargs['post_id']
-        serializer.save(user=self.request.user, post_id=post_id)
+        post = get_object_or_404(Post, id=post_id)
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user, post=post)
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def react_to_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+    action = request.data.get('action')
+
+    if action == 'like':
+        comment.likes.add(request.user)
+        comment.dislikes.remove(request.user)
+    elif action == 'dislike':
+        comment.dislikes.add(request.user)
+        comment.likes.remove(request.user)
+    else:
+        return Response({'error': 'Invalid action'}, status=400)
+
+    return Response({'message': f'{action.capitalize()} added'})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def reply_to_comment(request, comment_id):
+    parent = get_object_or_404(Comment, id=comment_id)
+    post = parent.post
+
+    content = request.data.get('content')
+    if not content:
+        return Response({'error': 'Content is required'}, status=400)
+
+    reply = Comment.objects.create(
+        user=request.user,
+        post=post,
+        parent=parent,
+        content=content
+    )
+    serializer = CommentSerializer(reply)
+    return Response(serializer.data, status=201)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def react_to_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    action = request.data.get('action')
+
+    if action not in ['like', 'dislike']:
+        return Response({'error': 'Invalid action'}, status=400)
+
+    from blog.models import PostLike  # import your model
+
+    is_like = action == 'like'
+    post_like, created = PostLike.objects.update_or_create(
+        user=request.user,
+        post=post,
+        defaults={'is_like': is_like}
+    )
+    return Response({'message': f'{action.capitalize()} saved'})

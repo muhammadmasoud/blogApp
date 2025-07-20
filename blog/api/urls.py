@@ -1,6 +1,11 @@
 from django.urls import path
 from .views import CommentListCreateView
+from .views import CustomTokenObtainPairView
 from . import views
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 from .views import (
     signup,
@@ -13,7 +18,7 @@ from .views import (
 from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
-    path('login/', obtain_auth_token, name='api-login'),
+    path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('signup/', signup, name='api-signup'),
 
     # Post endpoints
@@ -32,5 +37,14 @@ urlpatterns = [
     path('user/subscribe/', views.subscribe_to_category, name='subscribe_category'),
     path('user/unsubscribe/', views.unsubscribe_from_category, name='unsubscribe_from_category'),
 
-     path('posts/<int:post_id>/comments/', CommentListCreateView.as_view(), name='post-comments'),
+    path('posts/<int:post_id>/comments/', CommentListCreateView.as_view(), name='post-comments'),
+
+    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+
+    path('posts/<int:post_id>/react/', views.react_to_post, name='react-post'),
+
+    path('comments/<int:comment_id>/reply/', views.reply_to_comment, name='reply-comment'),
+       
 ]

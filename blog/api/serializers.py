@@ -1,12 +1,11 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from ..models import Category, Post, Tag ,Comment
-from rest_framework.pagination import PageNumberPagination
+from ..models import Category, Post, Tag, Comment
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-
-# ----- User Serializer -----
 User = get_user_model()
 
+# ----- User Serializer -----
 class UserSerializer(serializers.ModelSerializer):
     password_confirm = serializers.CharField(write_only=True)
 
@@ -33,7 +32,6 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 # ----- Category Serializer -----
-# ----- Category Serializer -----
 class CategorySerializer(serializers.ModelSerializer):
     subscribed = serializers.SerializerMethodField()
 
@@ -48,7 +46,6 @@ class CategorySerializer(serializers.ModelSerializer):
             return obj.subscription_set.filter(user=user).exists()
         return False
 
-
 # ----- Tag Serializer -----
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -57,29 +54,49 @@ class TagSerializer(serializers.ModelSerializer):
 
 # ----- Post Serializer -----
 class PostSerializer(serializers.ModelSerializer):
-   # category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), allow_null=True)
-    #tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True, required=False)
-     category = CategorySerializer(read_only=True)  # nested serializer for category
-     tags = TagSerializer(many=True, read_only=True)
+    category = CategorySerializer(read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
 
-     class Meta:
+    class Meta:
         model = Post
         fields = '__all__'
         read_only_fields = ['id', 'likes', 'dislikes', 'author']
 
-def to_representation(self, instance):
+    def to_representation(self, instance):
         rep = super().to_representation(instance)
-       # rep['category'] = instance.category.name if instance.category else None
-       # rep['tags'] = TagSerializer(instance.tags.all(), many=True).data
         return rep
+
+# ----- Comment Serializer -----
 class CommentSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
+    replies = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ['id', 'user', 'post', 'content', 'created_at']
-        read_only_fields = ['id', 'user', 'created_at']
+        fields = ['id', 'user', 'content', 'created_at', 'likes', 'dislikes', 'replies', 'parent']
 
-class PostPagination(PageNumberPagination):
-    page_size = 5
-    page_size_query_param = 'page_size'
+    def get_replies(self, obj):
+        if obj.replies.exists():
+            return CommentSerializer(obj.replies.all(), many=True).data
+        return []
+
+    def validate_content(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Content cannot be blank.")
+        return value
+
+   
+
+    def validate_content(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Content cannot be blank.")
+        return value
+
+# ----- JWT Custom Serializer -----
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['username'] = self.user.username  
+        return data

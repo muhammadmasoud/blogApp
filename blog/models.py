@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 
-
 # =============================================================================
 # USER MODELS
 # =============================================================================
@@ -17,7 +16,6 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
 
-
 # =============================================================================
 # CONTENT MODELS
 # =============================================================================
@@ -25,17 +23,17 @@ class User(AbstractUser):
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
-    
+
     def __str__(self):
         return self.name
-    
+
     class Meta:
         verbose_name_plural = 'Categories'
 
 
 class Tag(models.Model):
     name = models.CharField(max_length=50, unique=True)
-    
+
     def __str__(self):
         return self.name
 
@@ -44,24 +42,20 @@ class Post(models.Model):
     title = models.CharField(max_length=200)
     content = models.TextField()
     image = models.ImageField(upload_to='posts/', blank=True, null=True)
-    likes = models.PositiveIntegerField(default=0)
-    dislikes = models.PositiveIntegerField(default=0)
     publish_date = models.DateTimeField(default=timezone.now)
 
+    likes = models.PositiveIntegerField(default=0)
+    dislikes = models.PositiveIntegerField(default=0)
+
     author = models.ForeignKey(User, on_delete=models.CASCADE)
-    category = models.ForeignKey(
-        Category,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name='posts'  # Use related_name to get posts from category
-    )
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='posts')
     tags = models.ManyToManyField(Tag, blank=True)
 
     def __str__(self):
         return self.title
 
     def save(self, *args, **kwargs):
-        # If dislikes exceed 10, delete the post instead of saving
+        # Auto-delete post if it has too many dislikes
         if self.dislikes > 10:
             self.delete()
             return
@@ -70,14 +64,21 @@ class Post(models.Model):
     class Meta:
         ordering = ['-publish_date']
 
+# =============================================================================
+# COMMENT & REACTIONS MODELS
+# =============================================================================
 
+# blog/models.py
 class Comment(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    likes = models.ManyToManyField(User, related_name='liked_comments', blank=True)
+    dislikes = models.ManyToManyField(User, related_name='disliked_comments', blank=True)
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='replies', on_delete=models.CASCADE)
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
+
 
     def __str__(self):
         return f'{self.user.username}: {self.content[:50]}...'
@@ -91,7 +92,6 @@ class Comment(models.Model):
 
     class Meta:
         ordering = ['-created_at']
-
 
 # =============================================================================
 # INTERACTION MODELS
@@ -119,14 +119,12 @@ class PostLike(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        # Update counts after saving like/dislike
         self.post.likes = PostLike.objects.filter(post=self.post, is_like=True).count()
         self.post.dislikes = PostLike.objects.filter(post=self.post, is_like=False).count()
         self.post.save()
 
     class Meta:
         unique_together = ('user', 'post')
-
 
 # =============================================================================
 # ADMIN MODELS
