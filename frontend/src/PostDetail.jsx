@@ -186,8 +186,35 @@ export default function PostDetail() {
         ))}
       </div>
       <div className="post-detail-actions">
-        <button onClick={handleLike} disabled={!user || loadingLike}>👍 {likeCount}</button>
-        <button onClick={handleDislike} disabled={!user || loadingLike}>👎 {dislikeCount}</button>
+        <button
+          onClick={handleLike}
+          disabled={!user || loadingLike}
+          style={{
+            background: post && post.liked_by_me ? '#90ee90' : '',
+            fontWeight: post && post.liked_by_me ? 'bold' : '',
+            border: post && post.liked_by_me ? '2px solid #4caf50' : '',
+            color: post && post.liked_by_me ? '#222' : '',
+            transition: 'background 0.2s',
+            marginRight: 8
+          }}
+          title={post && post.liked_by_me ? 'Remove like' : 'Like'}
+        >
+          👍 {likeCount}
+        </button>
+        <button
+          onClick={handleDislike}
+          disabled={!user || loadingLike}
+          style={{
+            background: post && post.disliked_by_me ? '#ffb6b6' : '',
+            fontWeight: post && post.disliked_by_me ? 'bold' : '',
+            border: post && post.disliked_by_me ? '2px solid #e53935' : '',
+            color: post && post.disliked_by_me ? '#222' : '',
+            transition: 'background 0.2s'
+          }}
+          title={post && post.disliked_by_me ? 'Remove dislike' : 'Dislike'}
+        >
+          👎 {dislikeCount}
+        </button>
       </div>
       <div className="post-detail-comments">
         <h3>Comments</h3>

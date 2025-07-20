@@ -9,14 +9,20 @@ export default function Home() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [searching, setSearching] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetch(API_URL)
+  const fetchPosts = (searchTerm = '') => {
+    setLoading(true);
+    let url = API_URL;
+    if (searchTerm) {
+      url += `?search=${encodeURIComponent(searchTerm)}`;
+    }
+    fetch(url)
       .then(res => res.json())
       .then(data => {
-        // If paginated, data.results; else data
         setPosts(data.results || data);
         setLoading(false);
       })
@@ -24,7 +30,18 @@ export default function Home() {
         setError('Failed to load posts.');
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchPosts();
   }, []);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setSearching(true);
+    fetchPosts(search);
+    setSearching(false);
+  };
 
   return (
     <div className="home-hero">
@@ -42,6 +59,19 @@ export default function Home() {
       {user && (
         <div className="posts-section">
           <h2 className="posts-title">Latest Posts</h2>
+          {/* Search Bar */}
+          <form className="posts-search-bar" onSubmit={handleSearch} style={{ marginBottom: 24 }}>
+            <input
+              type="text"
+              placeholder="Search by title or tag..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ padding: 8, width: 250, borderRadius: 4, border: '1px solid #ccc', marginRight: 8 }}
+            />
+            <button type="submit" style={{ padding: '8px 16px', borderRadius: 4, border: 'none', background: '#007bff', color: '#fff' }} disabled={searching}>
+              {searching ? 'Searching...' : 'Search'}
+            </button>
+          </form>
           {loading && <div className="posts-loading">Loading posts...</div>}
           {error && <div className="posts-error">{error}</div>}
           {!loading && !error && posts.length === 0 && <div className="posts-empty">No posts yet.</div>}

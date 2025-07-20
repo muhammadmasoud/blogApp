@@ -100,7 +100,7 @@ def react_to_post(request, post_id):
         PostLike.objects.create(user=request.user, post=post, is_like=(action == 'like'))
 
     post.refresh_from_db()
-    return Response(PostSerializer(post).data)
+    return Response(PostSerializer(post, context={'request': request}).data)
 
 class CommentDeleteView(generics.DestroyAPIView):
     queryset = Comment.objects.all()
@@ -213,6 +213,12 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 def view_add_post(request):
     if request.method == 'GET':
         posts = Post.objects.all()
+        search_query = request.GET.get('search', '').strip()
+        if search_query:
+            posts = posts.filter(
+                Q(title__icontains=search_query) |
+                Q(tags__name__icontains=search_query)
+            ).distinct()
         ordering = request.GET.get('ordering', '-publish_date')
         posts = posts.order_by(ordering)
         
@@ -237,7 +243,7 @@ def post_by_id(request, id):
     post = get_object_or_404(Post, pk=id)
 
     if request.method == 'GET':
-        return Response(PostSerializer(post).data)
+        return Response(PostSerializer(post, context={'request': request}).data)
 
     if not request.user.is_authenticated:
         return Response({"error": "Authentication required."}, status=401)

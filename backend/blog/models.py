@@ -122,6 +122,13 @@ class PostLike(models.Model):
         self.post.likes = PostLike.objects.filter(post=self.post, is_like=True).count()
         self.post.dislikes = PostLike.objects.filter(post=self.post, is_like=False).count()
         self.post.save()
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        # Update post counters after deletion
+        self.post.likes = PostLike.objects.filter(post=self.post, is_like=True).count()
+        self.post.dislikes = PostLike.objects.filter(post=self.post, is_like=False).count()
+        self.post.save()
     
     class Meta:
         unique_together = ('user', 'post')

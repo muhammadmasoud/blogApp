@@ -72,6 +72,8 @@ class PostSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     author = serializers.SerializerMethodField()
+    liked_by_me = serializers.SerializerMethodField()
+    disliked_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -83,6 +85,20 @@ class PostSerializer(serializers.ModelSerializer):
             "id": obj.author.id,
             "username": obj.author.username
         }
+
+    def get_liked_by_me(self, obj):
+        request = self.context.get('request', None)
+        if request and request.user and request.user.is_authenticated:
+            from blog.models import PostLike
+            return PostLike.objects.filter(post=obj, user=request.user, is_like=True).exists()
+        return False
+
+    def get_disliked_by_me(self, obj):
+        request = self.context.get('request', None)
+        if request and request.user and request.user.is_authenticated:
+            from blog.models import PostLike
+            return PostLike.objects.filter(post=obj, user=request.user, is_like=False).exists()
+        return False
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
