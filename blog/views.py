@@ -1,9 +1,11 @@
 from django.shortcuts import render, get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.authtoken.models import Token
 from .models import Comment, Post, Category, Subscription
-from .serializers import CommentSerializer, PostSerializer,CategorySerializer
+from .serializers import UserSerializer, CommentSerializer, PostSerializer,CategorySerializer
 from rest_framework.views import APIView
 from django.core.mail import send_mail
 
@@ -100,6 +102,24 @@ class CategoryDelete(APIView):
         category = get_object_or_404(Category, id=category_id)
         category.delete()
         return Response({'detail': 'Category deleted.'}, status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def signup(request):
+    serializer = UserSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({
+            'user': {
+                'username': user.username,
+                'email': user.email,
+            },
+            'token': token.key,
+            'message': 'User created successfully.'
+        }, status=status.HTTP_201_CREATED)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view (['GET' , 'POST'])
 def view_add_post (request):
