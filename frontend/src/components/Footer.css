@@ -1,0 +1,48 @@
+.footer {
+  background: #222;
+  color: #fff;
+  padding: 20px 0;
+  text-align: center;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  z-index: 100;
+}
+
+.pagination {
+  margin-bottom: 10px;
+}
+
+.pagination button {
+  background: #444;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  margin: 0 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.pagination button:disabled {
+  background: #888;
+  cursor: not-allowed;
+}
+
+.footer-posts {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto;
+  max-width: 600px;
+}
+
+.footer-post-item {
+  margin: 4px 0;
+  font-size: 1rem;
+  color: #ddd;
+}
+
+.footer-post-item strong {
+  color: #fff;
+} 

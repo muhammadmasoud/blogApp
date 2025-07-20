@@ -1,45 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import './Home.css';
 import { useAuth } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = 'http://127.0.0.1:8000/api/posts/';
-
-export default function Home() {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
-  const [searching, setSearching] = useState(false);
+export default function Home({ posts, loading, error }) {
+  const [search, setSearch] = React.useState('');
+  const [searching, setSearching] = React.useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const fetchPosts = (searchTerm = '') => {
-    setLoading(true);
-    let url = API_URL;
-    if (searchTerm) {
-      url += `?search=${encodeURIComponent(searchTerm)}`;
-    }
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        setPosts(data.results || data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError('Failed to load posts.');
-        setLoading(false);
-      });
-  };
-
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+  // Search logic can be implemented to call setPage(1) and filter at the App level if needed
 
   const handleSearch = (e) => {
     e.preventDefault();
     setSearching(true);
-    fetchPosts(search);
+    // Optionally, trigger a search at the App level
     setSearching(false);
   };
 
@@ -59,7 +34,7 @@ export default function Home() {
       {user && (
         <div className="posts-section">
           <h2 className="posts-title">Latest Posts</h2>
-          {/* Search Bar */}
+          {/* Search Bar (optional, not functional now) */}
           <form className="posts-search-bar" onSubmit={handleSearch} style={{ marginBottom: 24 }}>
             <input
               type="text"
