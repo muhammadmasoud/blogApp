@@ -5,6 +5,10 @@ from django.shortcuts import get_object_or_404
 from .models import Category, Subscription
 from .serializers import CategorySerializer, PostSerializer
 from django.core.mail import send_mail
+from django.shortcuts import render
+from rest_framework import generics, permissions
+from .models import Comment
+from .serializers import CommentSerializer
 
 
 class IsAdminUser(permissions.BasePermission):
@@ -87,3 +91,16 @@ class CategoryDelete(APIView):
         category = get_object_or_404(Category, id=category_id)
         category.delete()
         return Response({'detail': 'Category deleted.'}, status=status.HTTP_204_NO_CONTENT)
+
+class CommentListCreateView(generics.ListCreateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class CommentDeleteView(generics.DestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAdminUser]
