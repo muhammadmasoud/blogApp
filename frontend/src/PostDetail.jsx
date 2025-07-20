@@ -223,6 +223,7 @@ export default function PostDetail() {
           .filter(comment => !comment.parent) // Only top-level comments
           .map(comment => (
             <div key={comment.id} className="comment mb-8 p-6 rounded-2xl bg-gradient-to-br from-indigo-900/70 via-purple-900/60 to-slate-900/80 shadow-xl border border-indigo-500/20">
+              <div className="comment-label">Comment</div>
               <div className="comment-meta flex items-center gap-3 mb-2 text-sm text-indigo-200 font-semibold">
                 <span className="inline-flex items-center gap-1"><span className="text-lg">👤</span>{comment.user || 'Unknown'}</span>
                 <span className="text-xs text-indigo-300">| {comment.created_at ? new Date(comment.created_at).toLocaleString() : ''}</span>
@@ -249,6 +250,7 @@ export default function PostDetail() {
               {/* Show the first reply, if it exists */}
               {comment.replies && comment.replies.length > 0 && (
                 <div className="comment reply mt-4 ml-8 p-4 rounded-xl bg-gradient-to-br from-indigo-800/60 via-purple-800/50 to-slate-800/70 border border-indigo-400/10 shadow-inner">
+                  <div className="reply-label">Reply</div>
                   <div className="comment-meta flex items-center gap-2 mb-1 text-xs text-pink-200 font-semibold">
                     <span className="inline-flex items-center gap-1"><span className="text-lg">👤</span>{comment.replies[0].user || 'Unknown'}</span>
                     <span className="text-xs text-pink-300">| {comment.replies[0].created_at ? new Date(comment.replies[0].created_at).toLocaleString() : ''}</span>

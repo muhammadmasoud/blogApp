@@ -9,6 +9,13 @@ export default function Home({ posts, loading, error }) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Helper to get the correct image URL (copied from PostDetail)
+  const getImageUrl = (img) => {
+    if (!img) return '';
+    if (img.startsWith('http')) return img;
+    return `http://127.0.0.1:8000${img}`;
+  };
+
   // Search logic can be implemented to call setPage(1) and filter at the App level if needed
 
   const handleSearch = (e) => {
@@ -58,6 +65,22 @@ export default function Home({ posts, loading, error }) {
                 style={{ cursor: 'pointer' }}
                 onClick={() => navigate(`/post/${post.id}`)}
               >
+                {/* Show post image if available */}
+                {post.image && (
+                  <img
+                    src={getImageUrl(post.image)}
+                    alt={post.title}
+                    className="post-card-image"
+                    style={{
+                      width: '100%',
+                      height: '180px',
+                      objectFit: 'cover',
+                      borderRadius: '14px',
+                      marginBottom: '1rem',
+                      background: '#222',
+                    }}
+                  />
+                )}
                 <h3 className="post-title">{post.title}</h3>
                 <div className="post-meta">
                   <span>By {post.author?.username || 'Unknown'}</span>

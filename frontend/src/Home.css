@@ -176,6 +176,27 @@
   text-align: center;
 }
 
+.comment-label {
+  font-size: 0.85rem;
+  color: #90cdf4;
+  font-weight: bold;
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+
+.reply-label {
+  font-size: 0.8rem;
+  color: #f472b6;
+  font-weight: bold;
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+
+.comment.reply {
+  border-left: 4px solid #f472b6;
+  background: #2d1a2e;
+}
+
 @media (max-width: 900px) {
   .home-content {
     padding: 2rem 1rem;

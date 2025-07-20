@@ -7,10 +7,12 @@ User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     password_confirm = serializers.CharField(write_only=True)
+    is_admin = serializers.BooleanField(read_only=True)
+    is_blocked = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = User
-        fields = ['email', 'username', 'password', 'password_confirm']
+        fields = ['email', 'username', 'password', 'password_confirm', 'is_admin', 'is_blocked']
         extra_kwargs = {'password': {'write_only': True}}
 
     def validate(self, data):

@@ -6,6 +6,14 @@ body, #root {
   background: #181926;
   box-sizing: border-box;
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
 }
 
 #root {

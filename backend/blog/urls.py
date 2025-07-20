@@ -41,6 +41,8 @@ urlpatterns = [
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('posts/<int:post_id>/react/', views.react_to_post, name='react-post'),
-
+    path('admin/users/', views.UserListView.as_view(), name='admin-user-list'),
+    path('admin/users/<int:user_id>/block_unblock/', views.block_unblock_user, name='admin-block-unblock-user'),
+    path('admin/users/<int:user_id>/promote_demote/', views.promote_demote_user, name='admin-promote-demote-user'),
 ]
     

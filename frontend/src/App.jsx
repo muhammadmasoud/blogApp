@@ -47,7 +47,7 @@ function App() {
     <AuthProvider>
       <Router>
         <Navbar />
-        <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'row' }}>
+        <div className="main-content">
           <Sidebar />
           <div style={{ flex: 1 }}>
             <Suspense fallback={<div style={{textAlign:'center',marginTop:'4rem',fontSize:'2rem',color:'#646cff'}}>Loading...</div>}>

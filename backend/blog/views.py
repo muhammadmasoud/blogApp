@@ -10,6 +10,7 @@ from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import AuthenticationFailed
 from .models import Comment, Post, Category, Subscription
 from rest_framework.views import APIView
 from django.core.mail import send_mail
@@ -21,6 +22,9 @@ from .serializers import (
     CommentSerializer,
     CustomTokenObtainPairSerializer
 )
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class CommentListCreateView(generics.ListCreateAPIView):
     serializer_class = CommentSerializer
@@ -207,6 +211,18 @@ def signup(request):
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        try:
+            user = User.objects.get(username=username)
+            if user.is_blocked:
+                raise AuthenticationFailed('This user is blocked. Contact admin.')
+        except User.DoesNotExist:
+            pass  # Let serializer handle invalid user
+        return super().post(request, *args, **kwargs)
+
 # -------------------- Posts --------------------
 @api_view(['GET', 'POST'])
 @permission_classes([AllowAny])
@@ -356,4 +372,54 @@ def all_categories_with_subscription_status(request):
         } for category in categories
     ]
     return Response(data)
+
+
+class UserListView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        users = User.objects.all()
+        data = [
+            {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'is_admin': user.is_admin,
+                'is_blocked': user.is_blocked,
+            }
+            for user in users
+        ]
+        return Response(data)
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def block_unblock_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    action = request.data.get('action')
+    if action == 'block':
+        user.is_blocked = True
+        user.save()
+        return Response({'message': f'User {user.username} blocked.'})
+    elif action == 'unblock':
+        user.is_blocked = False
+        user.save()
+        return Response({'message': f'User {user.username} unblocked.'})
+    else:
+        return Response({'error': 'Invalid action.'}, status=400)
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def promote_demote_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    action = request.data.get('action')
+    if action == 'promote':
+        user.is_admin = True
+        user.save()
+        return Response({'message': f'User {user.username} promoted to admin.'})
+    elif action == 'demote':
+        user.is_admin = False
+        user.save()
+        return Response({'message': f'User {user.username} demoted from admin.'})
+    else:
+        return Response({'error': 'Invalid action.'}, status=400)
 

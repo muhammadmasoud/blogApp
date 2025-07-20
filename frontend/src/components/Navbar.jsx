@@ -21,6 +21,9 @@ export default function Navbar() {
           {user ? (
             <>
               <span className="navbar-username">{user.username}</span>
+              {user.is_admin && (
+                <a href="http://127.0.0.1:8000/admin" className="navbar-link">Manage Blog</a>
+              )}
               <button className="navbar-logout" onClick={handleLogout}>Logout</button>
             </>
           ) : (
