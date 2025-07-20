@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Comment, Category , Post, Tag, Subscription
 from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 User = get_user_model()
 
@@ -30,20 +31,37 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 class CommentSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+    replies = serializers.SerializerMethodField()
+
     class Meta:
         model = Comment
-        fields = ['id', 'content', 'created_at', 'user', 'post', 'parent']
-        read_only_fields = ['id', 'created_at', 'user']
+        fields = ['id', 'user', 'content', 'created_at', 'likes', 'dislikes', 'replies', 'parent']
 
-    def validate_parent(self, value):
-        if value and value.parent:
-            raise serializers.ValidationError('Only single-level replies are allowed.')
-        return value 
+    def get_replies(self, obj):
+        if obj.replies.exists():
+            return CommentSerializer(obj.replies.all(), many=True).data
+        return []
 
-class CategorySerializer (serializers.ModelSerializer):
+    def validate_content(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Content cannot be blank.")
+        return value
+
+class CategorySerializer(serializers.ModelSerializer):
+    subscribed = serializers.SerializerMethodField()
+
     class Meta:
         model = Category
-        fields = '__all__'
+        fields = ['id', 'name', 'description', 'subscribed']
+
+    def get_subscribed(self, obj):
+        request = self.context.get('request')
+        user = request.user if request else None
+        if user and user.is_authenticated:
+            return obj.subscription_set.filter(user=user).exists()
+        return False
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,8 +69,8 @@ class TagSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class PostSerializer(serializers.ModelSerializer):
-    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), allow_null=True)
-    tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True, required=False)
+    category = CategorySerializer(read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
 
     class Meta:
         model = Post
@@ -61,8 +79,6 @@ class PostSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        rep['category'] = instance.category.name if instance.category else None
-        rep['tags'] = TagSerializer(instance.tags.all(), many=True).data
         return rep
 
 class SubscriptionSerializer(serializers.ModelSerializer):
@@ -80,5 +96,11 @@ try:
             fields = ['id', 'title', 'content', 'category', 'author', 'created_at']
 except ImportError:
     pass
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['username'] = self.user.username  
+        return data
 
 
