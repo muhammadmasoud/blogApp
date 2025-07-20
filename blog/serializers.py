@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Comment, Category , Post, Tag
+from .models import Comment, Category , Post, Tag, Subscription
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -36,5 +36,21 @@ class PostSerializer(serializers.ModelSerializer):
         rep['category'] = instance.category.name if instance.category else None
         rep['tags'] = TagSerializer(instance.tags.all(), many=True).data
         return rep
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = ['id', 'user', 'category']
+
+# If you have a Post model, add its serializer as well:
+try:
+    from .models import Post
+
+    class PostSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Post
+            fields = ['id', 'title', 'content', 'category', 'author', 'created_at']
+except ImportError:
+    pass
 
 
