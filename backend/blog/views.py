@@ -84,15 +84,23 @@ def react_to_post(request, post_id):
     if action not in ['like', 'dislike']:
         return Response({'error': 'Invalid action'}, status=400)
 
-    from blog.models import PostLike  # import your model
+    from blog.models import PostLike
 
-    is_like = action == 'like'
-    post_like, created = PostLike.objects.update_or_create(
-        user=request.user,
-        post=post,
-        defaults={'is_like': is_like}
-    )
-    return Response({'message': f'{action.capitalize()} saved'})
+    try:
+        post_like = PostLike.objects.get(user=request.user, post=post)
+        if (action == 'like' and post_like.is_like) or (action == 'dislike' and not post_like.is_like):
+            # User clicked the same reaction again, so remove it (toggle off)
+            post_like.delete()
+        else:
+            # User switched reaction (like <-> dislike)
+            post_like.is_like = (action == 'like')
+            post_like.save()
+    except PostLike.DoesNotExist:
+        # No previous reaction, create new
+        PostLike.objects.create(user=request.user, post=post, is_like=(action == 'like'))
+
+    post.refresh_from_db()
+    return Response(PostSerializer(post).data)
 
 class CommentDeleteView(generics.DestroyAPIView):
     queryset = Comment.objects.all()
