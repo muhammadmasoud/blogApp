@@ -172,3 +172,15 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
+# Email settings for Gmail SMTP
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'mohamedmas3oud5@gmail.com'  # <-- Replace with your Gmail address
+EMAIL_HOST_PASSWORD = 'vwba tjsr ugpj tzbl'   # <-- Replace with your Gmail App Password (not your main password)
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# IMPORTANT: For Gmail, you must enable 2-Step Verification and create an App Password.
+# See: https://support.google.com/accounts/answer/185833?hl=en

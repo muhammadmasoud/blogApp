@@ -264,7 +264,7 @@ class PostListAPIView(ListAPIView):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_categories(request):
-    categories = Category.objects.all()
+    categories = Category.objects.all().order_by('-created_at')
     serializer = CategorySerializer(categories, many=True, context={'request': request})
     return Response(serializer.data)
 
@@ -288,17 +288,19 @@ def subscribe_to_category(request):
         return Response({'error': 'Category ID is required'}, status=400)
 
     category = get_object_or_404(Category, id=category_id)
-    request.user.subscribed_categories.add(category)
-
-    send_mail(
-        'Subscription Confirmation',
-        f'You have successfully subscribed to category: {category.name}',
-        'noreply@yourblog.com',
-        [request.user.email],
-        fail_silently=True,
-    )
-
-    return Response({'message': f'Subscribed to category: {category.name}'})
+    subscription, created = Subscription.objects.get_or_create(user=request.user, category=category)
+    if created:
+        # Send confirmation email with custom message
+        send_mail(
+            subject='Subscription Confirmation',
+            message=f'Hello - {request.user.username} - you have subscribed successfully in - {category.name} - welcome aboard',
+            from_email='no-reply@blogapp.com',
+            recipient_list=[request.user.email],
+            fail_silently=True
+        )
+        return Response({'message': f'Subscribed to category: {category.name}'})
+    else:
+        return Response({'message': f'Already subscribed to category: {category.name}'})
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -308,7 +310,7 @@ def unsubscribe_from_category(request):
         return Response({'error': 'Category ID is required'}, status=400)
 
     category = get_object_or_404(Category, id=category_id)
-    request.user.subscribed_categories.remove(category)
+    Subscription.objects.filter(user=request.user, category=category).delete()
     return Response({'message': f'Unsubscribed from category: {category.name}'})
 
 @api_view(['GET'])
@@ -323,9 +325,15 @@ def user_subscriptions(request):
 @permission_classes([AllowAny])
 def all_categories_with_subscription_status(request):
     user = request.user
-    subscribed_ids = set(user.subscribed_categories.values_list('id', flat=True)) if user.is_authenticated else set()
+    if user.is_authenticated:
+        from .models import Subscription
+        subscribed_ids = set(
+            Subscription.objects.filter(user=user).values_list('category_id', flat=True)
+        )
+    else:
+        subscribed_ids = set()
 
-    categories = Category.objects.all()
+    categories = Category.objects.all().order_by('-created_at')
     data = [
         {
             'id': category.id,
